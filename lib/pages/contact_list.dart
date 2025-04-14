@@ -86,9 +86,145 @@ class _ContactListState extends State<ContactList> {
       navigationBar: CupertinoNavigationBar(
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          child: const Icon(CupertinoIcons.plus),
+          child: const Icon(CupertinoIcons.add),
           onPressed: (){
+            showCupertinoModalPopup(
+              context: context,
+              builder: (context) {
+                return CupertinoActionSheet(
+                  title: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        child: Text('Cancel'),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                      ),
+                      Text('New Contact'),
+                      CupertinoButton(
+                        child: Text('Done'),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
 
+                  message: Column(
+                    children: [
+
+                      Icon(CupertinoIcons.person_circle_fill, color: CupertinoColors.systemGrey, size: 200,),
+                      CupertinoButton(
+                        child: Text('Add Photo'),
+                        onPressed: () async {
+
+                        },
+                      ),
+                      // SizedBox(height: 50,),
+
+                      Container(
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.only(bottomLeft: Radius.circular(5), bottomRight: Radius.circular(5)),
+                            color: CupertinoColors.systemFill
+                        ),
+                        child: Column(
+                          children: [
+                            CupertinoTextField(
+                              placeholder: 'First Name',
+                              decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.only(topLeft: Radius.circular(5), topRight: Radius.circular(5)),
+                                  color: null
+                              ),
+                            ),
+                            Divider(height: 0,),
+                            CupertinoTextField(
+                              placeholder: 'Last Name',
+                              decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.only(bottomLeft: Radius.circular(5), bottomRight: Radius.circular(5)),
+                                  color: null
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 15,),
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.only(bottomLeft: Radius.circular(5), bottomRight: Radius.circular(5)),
+                          color: CupertinoColors.systemFill
+                        ),
+                        child: CupertinoTextField(
+                          prefix: CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            child: Icon(CupertinoIcons.add_circled_solid, color: CupertinoColors.systemGreen,),
+                            onPressed: () async {
+
+                            },
+                          ),
+                          placeholder: 'add phone',
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.only(bottomLeft: Radius.circular(5), bottomRight: Radius.circular(5)),
+                              color: null
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 15,),
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.only(bottomLeft: Radius.circular(5), bottomRight: Radius.circular(5)),
+                          color: CupertinoColors.systemFill
+                        ),
+                        child: CupertinoTextField(
+                          prefix: CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            child: Icon(CupertinoIcons.add_circled_solid, color: CupertinoColors.systemGreen,),
+                            onPressed: () async {
+
+                            },
+                          ),
+                          placeholder: 'add email',
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.only(bottomLeft: Radius.circular(5), bottomRight: Radius.circular(5)),
+                              color: null
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 15,),
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.only(bottomLeft: Radius.circular(5), bottomRight: Radius.circular(5)),
+                          color: CupertinoColors.systemFill
+                        ),
+                        child: CupertinoTextField(
+                          prefix: CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            child: Icon(CupertinoIcons.add_circled_solid, color: CupertinoColors.systemGreen,),
+                            onPressed: () async {
+
+                            },
+                          ),
+                          placeholder: 'add url',
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.only(bottomLeft: Radius.circular(5), bottomRight: Radius.circular(5)),
+                              color: null
+                          ),
+                        ),
+                      ),
+
+
+
+
+
+                      SizedBox(height: double.maxFinite,),
+
+
+                    ],
+                  ),
+
+                ); 
+              }
+            );
           },
         ),
       ),
