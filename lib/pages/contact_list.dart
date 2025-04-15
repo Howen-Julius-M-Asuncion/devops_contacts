@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:contacts/pages/contact_data.dart';
-import 'package:contacts/pages/edit_data.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:contacts/public/variables.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:hive/hive.dart';
 
 class ContactList extends StatefulWidget {
   const ContactList({super.key});
@@ -13,35 +13,48 @@ class ContactList extends StatefulWidget {
   State<ContactList> createState() => _ContactListState();
 }
 
-class _ContactListState extends State<ContactList> {
-  List<dynamic> contacts = [
-    {
-      "name": "John Doe",
-      "phone": ["09695136467", "0923456789"],
-      "email": ["john@example.com"],
-      "url": ["https://facebook.com/johndoe"],
-      "photo": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/John_Doe%2C_born_John_Nommensen_Duchac.jpg/1200px-John_Doe%2C_born_John_Nommensen_Duchac.jpg",
-      "isLocal": false,
-    },
-    {
-      "name": "Jane Smith",
-      "phone": ["09123456789"],
-      "email": ["jane@example.com"],
-      "url": [],
-      "photo": "",
-      "isLocal": false,
-    },
-  ];
-
-  String query = "";
+class _ContactListState extends State<ContactList> with WidgetsBindingObserver {
+  final Box contactsBox = Hive.box('contacts');
+  List<dynamic> contacts = [];
   List<dynamic> filteredContacts = [];
+  String query = "";
   final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
-    filteredContacts = contacts;
-    print('ContactList initialized with ${contacts.length} contacts');
+    WidgetsBinding.instance.addObserver(this);
+    print('Initializing ContactList');
+    _loadContacts();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    print('Disposing ContactList');
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      print('App resumed - refreshing contacts');
+      _loadContacts();
+    }
+  }
+
+  void _loadContacts() {
+    print('Loading contacts from Hive');
+    setState(() {
+      contacts = contactsBox.get('contacts', defaultValue: []);
+      filteredContacts = List.from(contacts);
+      print('Loaded ${contacts.length} contacts');
+    });
+  }
+
+  void _saveContacts() {
+    print('Saving ${contacts.length} contacts to Hive');
+    contactsBox.put('contacts', contacts);
   }
 
   void filterContacts(String query) {
@@ -55,35 +68,13 @@ class _ContactListState extends State<ContactList> {
             contact['phone'].any((phone) => phone.toString().toLowerCase().contains(searchLower)) ||
             contact['email'].any((email) => email.toString().toLowerCase().contains(searchLower));
       }).toList();
+      print('Filtered to ${filteredContacts.length} contacts');
     });
-  }
-
-  void _handleEditResult(dynamic result, String originalName) {
-    print('Handling edit result: $result');
-    if (result == true) {
-      // Delete case
-      print('Deleting contact: $originalName');
-      setState(() {
-        contacts.removeWhere((c) => c['name'] == originalName);
-        filterContacts(query);
-      });
-    } else if (result != null) {
-      // Update case
-      print('Updating contact: $originalName');
-      setState(() {
-        final index = contacts.indexWhere((c) => c['name'] == originalName);
-        if (index != -1) {
-          contacts[index] = result;
-        } else {
-          contacts.add(result);
-        }
-        filterContacts(query);
-      });
-    }
   }
 
   @override
   Widget build(BuildContext context) {
+    print('Building ContactList widget');
     return CupertinoPageScaffold(
       backgroundColor: CupertinoColors.systemBackground,
       navigationBar: CupertinoNavigationBar(
@@ -95,7 +86,6 @@ class _ContactListState extends State<ContactList> {
             showCupertinoModalPopup(
               context: context,
               builder: (context) {
-                // Modal-specific state
                 File? modalImage;
                 String? modalImagePath;
                 final TextEditingController _fname = TextEditingController();
@@ -132,18 +122,18 @@ class _ContactListState extends State<ContactList> {
                           const SizedBox(height: 20),
                           if (modalImage != null)
                             Container(
-                                width: 200,
-                                height: 200,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: CupertinoColors.systemGrey,
+                              width: 200,
+                              height: 200,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: CupertinoColors.systemGrey,
+                              ),
+                              child: ClipOval(
+                                child: Image.file(
+                                  modalImage!,
+                                  fit: BoxFit.cover,
                                 ),
-                                child: ClipOval(
-                                  child: Image.file(
-                                    modalImage!,
-                                    fit: BoxFit.cover,
-                                  ),
-                                )
+                              ),
                             )
                           else
                             Icon(
@@ -257,6 +247,7 @@ class _ContactListState extends State<ContactList> {
                               print('New contact created: ${newContact['name']}');
                               setState(() {
                                 contacts.add(newContact);
+                                _saveContacts();
                                 filterContacts(query);
                               });
                               cleanup();
@@ -388,7 +379,7 @@ class _ContactListState extends State<ContactList> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Howen Julius Asuncion',
+                        'HGR AJS',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(
@@ -422,18 +413,14 @@ class _ContactListState extends State<ContactList> {
                           selectedUrl = List.from(contact['url']);
                         });
 
-                        final shouldDelete = await Navigator.push(
+                        await Navigator.push(
                           context,
                           CupertinoPageRoute(builder: (context) => ContactData()),
                         );
 
-                        if (shouldDelete == true) {
-                          print('Deleting contact: ${contact['name']}');
-                          setState(() {
-                            contacts.removeWhere((c) => c['name'] == contact['name']);
-                            filterContacts(query);
-                          });
-                        }
+                        // Refresh when returning from ContactData
+                        print('Returned from ContactData - refreshing list');
+                        _loadContacts();
                       },
                       child: Container(
                         color: CupertinoColors.secondarySystemFill.withOpacity(0),
@@ -467,6 +454,7 @@ class _ContactListState extends State<ContactList> {
     String placeholder = '',
     TextInputType? keyboardType,
   }) {
+    print('Building field section for: $label');
     return Column(
       children: [
         if (controllers.isNotEmpty)

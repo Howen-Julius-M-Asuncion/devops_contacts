@@ -3,6 +3,7 @@ import 'package:contacts/public/variables.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:hive/hive.dart';
 
 class EditData extends StatefulWidget {
   const EditData({super.key});
@@ -12,6 +13,7 @@ class EditData extends StatefulWidget {
 }
 
 class _EditDataState extends State<EditData> {
+  final Box contactsBox = Hive.box('contacts');
   final ImagePicker _picker = ImagePicker();
   final TextEditingController _fname = TextEditingController();
   final TextEditingController _lname = TextEditingController();
@@ -188,7 +190,21 @@ class _EditDataState extends State<EditData> {
       ),
     ).then((value) {
       if (value != null) {
-        print('Saving changes and returning updated contact');
+        print('Saving changes to Hive');
+        final contacts = contactsBox.get('contacts', defaultValue: []);
+
+        if (value['name'] != selectedName) {
+          contacts.removeWhere((c) => c['name'] == selectedName);
+        }
+
+        final index = contacts.indexWhere((c) => c['name'] == value['name']);
+        if (index != -1) {
+          contacts[index] = value;
+        } else {
+          contacts.add(value);
+        }
+
+        contactsBox.put('contacts', contacts);
         Navigator.pop(context, value);
       }
     });
@@ -213,6 +229,9 @@ class _EditDataState extends State<EditData> {
             child: const Text("Delete", style: TextStyle(color: CupertinoColors.destructiveRed)),
             onPressed: () {
               print('User confirmed delete');
+              final contacts = contactsBox.get('contacts', defaultValue: []);
+              contacts.removeWhere((c) => c['name'] == selectedName);
+              contactsBox.put('contacts', contacts);
               Navigator.pop(context);
               Navigator.pop(context, true);
             },
@@ -222,7 +241,90 @@ class _EditDataState extends State<EditData> {
     );
   }
 
-  // [Keep all other existing methods like _buildFieldSection, etc.]
+  Widget _buildFieldSection({
+    required String label,
+    required List<TextEditingController> controllers,
+    required VoidCallback onAdd,
+    required Function(int) onRemove,
+    String placeholder = '',
+    TextInputType? keyboardType,
+  }) {
+    print('Building field section for: $label');
+    return Column(
+      children: [
+        if (controllers.isNotEmpty)
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(5),
+              color: CupertinoColors.systemFill,
+            ),
+            child: Column(
+              children: [
+                for (int i = 0; i < controllers.length; i++)
+                  Column(
+                    children: [
+                      Row(
+                        children: [
+                          CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            child: const Icon(
+                              CupertinoIcons.minus_circle_fill,
+                              color: CupertinoColors.systemRed,
+                              size: 20,
+                            ),
+                            onPressed: () => onRemove(i),
+                          ),
+                          Expanded(
+                            child: CupertinoTextField(
+                              controller: controllers[i],
+                              placeholder: placeholder,
+                              keyboardType: keyboardType,
+                              decoration: const BoxDecoration(),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (i < controllers.length - 1)
+                        const Divider(height: 0, indent: 0),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 10),
+        CupertinoButton(
+          onPressed: onAdd,
+          padding: EdgeInsets.zero,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(5),
+              color: CupertinoColors.systemFill,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                const Icon(
+                  CupertinoIcons.add_circled_solid,
+                  color: CupertinoColors.systemGreen,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'add ${label[0].toUpperCase()}${label.substring(1)}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: CupertinoColors.systemBackground,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -347,91 +449,6 @@ class _EditDataState extends State<EditData> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildFieldSection({
-    required String label,
-    required List<TextEditingController> controllers,
-    required VoidCallback onAdd,
-    required Function(int) onRemove,
-    String placeholder = '',
-    TextInputType? keyboardType,
-  }) {
-    print('Building field section for: $label');
-    return Column(
-      children: [
-        if (controllers.isNotEmpty)
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(5),
-              color: CupertinoColors.systemFill,
-            ),
-            child: Column(
-              children: [
-                for (int i = 0; i < controllers.length; i++)
-                  Column(
-                    children: [
-                      Row(
-                        children: [
-                          CupertinoButton(
-                            padding: EdgeInsets.zero,
-                            child: const Icon(
-                              CupertinoIcons.minus_circle_fill,
-                              color: CupertinoColors.systemRed,
-                              size: 20,
-                            ),
-                            onPressed: () => onRemove(i),
-                          ),
-                          Expanded(
-                            child: CupertinoTextField(
-                              controller: controllers[i],
-                              placeholder: placeholder,
-                              keyboardType: keyboardType,
-                              decoration: const BoxDecoration(),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (i < controllers.length - 1)
-                        const Divider(height: 0, indent: 0),
-                    ],
-                  ),
-              ],
-            ),
-          ),
-        const SizedBox(height: 10),
-        CupertinoButton(
-          onPressed: onAdd,
-          padding: EdgeInsets.zero,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(5),
-              color: CupertinoColors.systemFill,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                const Icon(
-                  CupertinoIcons.add_circled_solid,
-                  color: CupertinoColors.systemGreen,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'add ${label[0].toUpperCase()}${label.substring(1)}',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: CupertinoColors.systemBackground,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

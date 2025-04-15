@@ -119,14 +119,12 @@ class _ContactDataState extends State<ContactData> {
           SliverToBoxAdapter(
             child: Stack(
               children: [
-                // Main contact image with fallback to initials
                 SizedBox(
                   height: 450,
                   width: double.infinity,
                   child: _buildPhotoWidget(),
                 ),
 
-                // PSEUDO-NAVBAR
                 Positioned(
                   top: 0,
                   left: 0,
@@ -182,12 +180,12 @@ class _ContactDataState extends State<ContactData> {
                             );
 
                             if (result == true) {
-                              // Delete case - notify parent to delete
-                              print('Contact deleted, notifying parent');
+                              // Contact was deleted - return to list
+                              print('Contact deleted, returning to list');
                               Navigator.pop(context, true);
                             } else if (result != null) {
-                              // Update case - refresh current view
-                              print('Contact updated, refreshing view');
+                              // Contact was updated - refresh current view only
+                              print('Contact updated, refreshing current view');
                               setState(() {
                                 selectedName = result['name'];
                                 selectedPhoto = result['photo'];
@@ -196,7 +194,9 @@ class _ContactDataState extends State<ContactData> {
                                 selectedEmail = List.from(result['email']);
                                 selectedUrl = List.from(result['url']);
                               });
+                              // Don't pop here - stay on ContactData
                             }
+                            // No action for cancel
                           },
                         ),
                       ],
@@ -204,7 +204,6 @@ class _ContactDataState extends State<ContactData> {
                   ),
                 ),
 
-                // CONTACT ACTIONS
                 Positioned(
                   bottom: 0,
                   left: 0,
@@ -216,7 +215,6 @@ class _ContactDataState extends State<ContactData> {
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                         child: Column(
                           children: [
-                            // LABEL
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -267,7 +265,6 @@ class _ContactDataState extends State<ContactData> {
                               ),
                             ),
                             SizedBox(height: 8),
-                            // ACTION BUTTONS
                             Row(
                               children: [
                                 _buildActionButton(
@@ -310,12 +307,10 @@ class _ContactDataState extends State<ContactData> {
             ),
           ),
 
-          // CONTACT DETAILS SECTION
           SliverPadding(
             padding: const EdgeInsets.all(20),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                // PROFILE ROW
                 Container(
                   padding: EdgeInsets.only(left: 10, top: 5, bottom: 5),
                   decoration: BoxDecoration(
@@ -354,7 +349,6 @@ class _ContactDataState extends State<ContactData> {
                   ),
                 ),
 
-                // PHONE NUMBERS
                 SizedBox(height: 15),
                 ...selectedPhone.asMap().entries.map((entry) {
                   final index = entry.key;
@@ -370,7 +364,6 @@ class _ContactDataState extends State<ContactData> {
                   );
                 }).toList(),
 
-                // EMAIL ADDRESSES
                 SizedBox(height: 15),
                 ...selectedEmail.asMap().entries.map((entry) {
                   final index = entry.key;
@@ -386,7 +379,6 @@ class _ContactDataState extends State<ContactData> {
                   );
                 }).toList(),
 
-                // WEBSITE LINKS
                 SizedBox(height: 15),
                 ...selectedUrl.asMap().entries.map((entry) {
                   final index = entry.key;
